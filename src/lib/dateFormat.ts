@@ -66,3 +66,16 @@ export function formatDateTime(value: string): string {
   const date = `${jst.getUTCFullYear()}/${pad2(jst.getUTCMonth() + 1)}/${pad2(jst.getUTCDate())}`;
   return `${date} ${pad2(jst.getUTCHours())}:${pad2(jst.getUTCMinutes())}`;
 }
+
+// toISOString() の形 → CSV に書き出す日本時間の "YYYY-MM-DD HH:mm"（要件定義書8章）。形が違えば元の文字を返す
+export function formatCsvDateTime(value: string): string {
+  const shown = formatDateTime(value);
+  if (shown === value) return value;
+  return shown.replaceAll("/", "-");
+}
+
+// 時刻（ミリ秒）→ 日本時間の今日 "YYYYMMDD"（CSV のファイル名）
+export function formatFileDate(ms: number): string {
+  const jst = new Date(ms + JST_OFFSET_MS);
+  return `${jst.getUTCFullYear()}${pad2(jst.getUTCMonth() + 1)}${pad2(jst.getUTCDate())}`;
+}

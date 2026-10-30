@@ -9,6 +9,7 @@ import SearchBox from "@/components/admin/SearchBox";
 import ReservationTable from "@/components/admin/ReservationTable";
 import ReservationCards from "@/components/admin/ReservationCards";
 import ResetData from "@/components/admin/ResetData";
+import CsvExport from "@/components/csv/CsvExport";
 import { STORAGE_NOTICE_TEXT, useReservations } from "@/lib/useReservations";
 
 // 文字の順で比べる（localeCompare は Intl の並べ方に左右されるので使わない）
@@ -21,7 +22,7 @@ function sortForList(reservations: readonly Reservation[]): Reservation[] {
   return [...reservations].sort((a, b) => compareText(a.lessonDate, b.lessonDate) || compareText(a.createdAt, b.createdAt));
 }
 
-// ②管理一覧（F5〜F10）。CSV（T06・T07）はまだ置かない
+// ②管理一覧（F5〜F10・F15）。CSV の読み込み（T07）はまだ置かない
 export default function AdminPage() {
   const snapshot = useReservations();
   const loaded = snapshot.loading ? null : snapshot;
@@ -60,6 +61,15 @@ export default function AdminPage() {
               <ReservationCards reservations={shown} onChanged={setActionMessage} />
             </>
           )}
+          {/* V-01 と「CSV に書き出す」だけ。「CSV を読み込む」と V-03 は T07 で足す */}
+          <section aria-labelledby="csv-heading" className="flex flex-col gap-3">
+            <h2 id="csv-heading" className="text-body font-bold text-ink">
+              CSV（表計算ソフトとのやり取り）
+            </h2>
+            <div className="flex flex-wrap gap-3">
+              <CsvExport reservations={all} />
+            </div>
+          </section>
           <ResetData onReset={setActionMessage} />
         </section>
       ) : (
