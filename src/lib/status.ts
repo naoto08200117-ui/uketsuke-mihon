@@ -1,4 +1,4 @@
-import type { ChangeVia, Status, StatusChange } from "@/types/reservation";
+import type { ChangeVia, Reservation, Status, StatusChange } from "@/types/reservation";
 import { HISTORY_MAX } from "@/lib/limits";
 
 // 状態の進め方（要件定義書5章・F7・F12）
@@ -46,4 +46,18 @@ export function undoTarget(history: readonly StatusChange[]): Status | null {
 // 足して51行になったら一番古い行を捨てる
 export function appendHistory(history: readonly StatusChange[], change: StatusChange): StatusChange[] {
   return [...history, change].slice(-HISTORY_MAX);
+}
+
+// F7：読み直したデータ current の id の申込を、押した時に見えていた状態 shown の次にする。
+// 申込がない・状態が shown と違う・次がない（別のタブで変わった）なら null（書かずに描き直すだけ）。
+// current は覚えておいたスナップショットなので書き換えず、新しい配列とオブジェクトを返す
+export function advanceStatus(current: readonly Reservation[], id: string, shown: Status, at: string): Reservation[] | null {
+  const target = current.find((r) => r.id === id);
+  const to = nextStatus(shown);
+  if (!target || target.status !== shown || to === null) return null;
+  return current.map((r) =>
+    r.id === id
+      ? { ...r, status: to, updatedAt: at, history: appendHistory(r.history, { from: shown, to, at, via: "button" }) }
+      : r,
+  );
 }

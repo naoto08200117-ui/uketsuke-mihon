@@ -4,9 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import type { Reservation } from "@/types/reservation";
 import { formatLessonDate } from "@/lib/dateFormat";
-
-const secondaryButton =
-  "inline-flex min-h-12 items-center rounded-control border border-line bg-surface px-4 text-body text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+import { secondaryButtonClass as secondaryButton } from "@/components/form/Field";
 
 // F4：完了の表示（K-01〜K-04）。表示が変わったら K-01 の見出しにフォーカスを移す
 export default function ApplyDone({ reservation, onAgain }: { reservation: Reservation; onAgain: () => void }) {
