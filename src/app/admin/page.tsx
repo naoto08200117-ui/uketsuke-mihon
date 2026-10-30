@@ -31,7 +31,7 @@ export default function AdminPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const messages = loaded?.notice ? [STORAGE_NOTICE_TEXT[loaded.notice]] : [];
-  // 成功のお知らせは赤にしない（2026-10-30 nao 承認。DESIGN.md「体験レッスン受付で足したもの」）
+  // 成功のお知らせは赤にしない（DESIGN.md「体験レッスン受付で足したもの」）
   const notices = actionMessage ? [actionMessage] : [];
 
   const all = loaded ? loaded.reservations : [];
