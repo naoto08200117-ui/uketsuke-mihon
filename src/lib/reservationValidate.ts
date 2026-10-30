@@ -1,4 +1,4 @@
-import type { Reservation, StatusChange } from "@/types/reservation";
+import type { People, Reservation, StatusChange } from "@/types/reservation";
 import { EMAIL_MAX, HISTORY_MAX, ID_MAX, MEMO_MAX, NAME_MAX, PEOPLE_OPTIONS, PHONE_DIGITS_MAX, PHONE_DIGITS_MIN, PHONE_MAX, REQUEST_MAX, RESERVATIONS_MAX } from "@/lib/limits";
 import { isLessonDate } from "@/lib/lessons";
 import { STATUSES, VIAS } from "@/lib/status";
@@ -96,4 +96,36 @@ export function validateStore(raw: unknown): StoreResult {
     reservations.push(r);
   }
   return { ok: true, reservations, dropped };
+}
+
+// ── 申込フォーム（F2・F3）──
+
+export type ApplyInput = { name: string; email: string; phone: string; lessonDate: string; people: People; request: string };
+
+// F-10・F-12〜F-18 に当たる。seats は残り席の数、duplicate は付ける欄を持つ
+export type ApplyError =
+  | { code: "nameEmpty" | "contactEmpty" | "emailFormat" | "phoneFormat" | "dateEmpty" | "limit" }
+  | { code: "seats"; remaining: number }
+  | { code: "duplicate"; field: "email" | "phone" };
+
+// 入力の形だけを F3 の順（名前→連絡先→メールの形→電話の形→希望日）で確かめ、前後の空白を除き電話を半角に直した値を返す。
+// 残り席・同じ連絡先・件数は、保存の直前に読み直したデータで確かめるため、ここでは見ない
+export function checkApplyInput(raw: ApplyInput): { ok: true; value: ApplyInput } | { ok: false; error: ApplyError } {
+  const name = raw.name.trim();
+  const email = raw.email.trim();
+  const phone = normalizePhone(raw.phone);
+  if (name === "") return { ok: false, error: { code: "nameEmpty" } };
+  if (email === "" && phone === "") return { ok: false, error: { code: "contactEmpty" } };
+  if (email !== "" && !isValidEmail(email)) return { ok: false, error: { code: "emailFormat" } };
+  if (phone !== "" && !isValidPhone(phone)) return { ok: false, error: { code: "phoneFormat" } };
+  if (!isLessonDate(raw.lessonDate)) return { ok: false, error: { code: "dateEmpty" } };
+  return { ok: true, value: { name, email, phone, lessonDate: raw.lessonDate, people: raw.people, request: raw.request } };
+}
+
+// F-17：メールは小文字にして、電話は数字だけにして比べる。空の欄どうしは比べない。当たった欄を返す
+export function sameContactField(a: { email: string; phone: string }, b: { email: string; phone: string }): "email" | "phone" | null {
+  if (a.email !== "" && a.email.toLowerCase() === b.email.toLowerCase()) return "email";
+  const digitsA = a.phone.replace(/\D/g, "");
+  if (digitsA !== "" && digitsA === b.phone.replace(/\D/g, "")) return "phone";
+  return null;
 }
