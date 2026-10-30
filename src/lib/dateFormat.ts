@@ -50,3 +50,19 @@ export function isIsoTimestamp(value: string): boolean {
   // 読み戻して同じ文字になれば、月・日・時・分・秒が範囲内
   return new Date(ms).toISOString() === value;
 }
+
+// 日本時間は UTC に9時間足した時刻（日本は夏時間がない）
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+// toISOString() の形 → 日本時間の "YYYY/MM/DD HH:mm"（F14・R-06・詳細の申込日時）。形が違えば元の文字を返す
+export function formatDateTime(value: string): string {
+  const m = ISO_PATTERN.exec(value);
+  if (!m || !isIsoTimestamp(value)) return value;
+  const jst = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5])) + JST_OFFSET_MS);
+  const date = `${jst.getUTCFullYear()}/${pad2(jst.getUTCMonth() + 1)}/${pad2(jst.getUTCDate())}`;
+  return `${date} ${pad2(jst.getUTCHours())}:${pad2(jst.getUTCMinutes())}`;
+}

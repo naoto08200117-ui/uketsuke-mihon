@@ -1,5 +1,6 @@
 import type { ChangeVia, Reservation, Status, StatusChange } from "@/types/reservation";
 import { HISTORY_MAX } from "@/lib/limits";
+import { remainingSeats } from "@/lib/seats";
 
 // 状態の進め方（要件定義書5章・F7・F12）
 export const STATUSES: readonly Status[] = ["new", "contacted", "confirmed", "done", "canceled"];
@@ -48,16 +49,41 @@ export function appendHistory(history: readonly StatusChange[], change: StatusCh
   return [...history, change].slice(-HISTORY_MAX);
 }
 
-// F7：読み直したデータ current の id の申込を、押した時に見えていた状態 shown の次にする。
-// 申込がない・状態が shown と違う・次がない（別のタブで変わった）なら null（書かずに描き直すだけ）。
+// id の申込の状態を to にし、updatedAt を変え、記録に1行足す。
 // current は覚えておいたスナップショットなので書き換えず、新しい配列とオブジェクトを返す
-export function advanceStatus(current: readonly Reservation[], id: string, shown: Status, at: string): Reservation[] | null {
-  const target = current.find((r) => r.id === id);
-  const to = nextStatus(shown);
-  if (!target || target.status !== shown || to === null) return null;
+function changeStatus(current: readonly Reservation[], id: string, to: Status, at: string, via: ChangeVia): Reservation[] {
   return current.map((r) =>
-    r.id === id
-      ? { ...r, status: to, updatedAt: at, history: appendHistory(r.history, { from: shown, to, at, via: "button" }) }
-      : r,
+    r.id === id ? { ...r, status: to, updatedAt: at, history: appendHistory(r.history, { from: r.status, to, at, via }) } : r,
   );
+}
+
+// 読み直したデータ current で、id の申込が押した時に見えていた状態 shown のままなら、その申込を返す
+function findShown(current: readonly Reservation[], id: string, shown: Status): Reservation | null {
+  const target = current.find((r) => r.id === id);
+  return target && target.status === shown ? target : null;
+}
+
+// F7：id の申込を、押した時に見えていた状態 shown の次にする。
+// 申込がない・状態が shown と違う・次がない（別のタブで変わった）なら null（書かずに描き直すだけ）
+export function advanceStatus(current: readonly Reservation[], id: string, shown: Status, at: string): Reservation[] | null {
+  const to = nextStatus(shown);
+  if (!findShown(current, id, shown) || to === null) return null;
+  return changeStatus(current, id, to, at, "button");
+}
+
+// F11：キャンセルにする（新規・連絡済み・確定のときだけ）。決まりは F7 と同じ
+export function cancelStatus(current: readonly Reservation[], id: string, shown: Status, at: string): Reservation[] | null {
+  if (!findShown(current, id, shown) || !canCancel(shown)) return null;
+  return changeStatus(current, id, "canceled", at, "button");
+}
+
+// F12：1つ前に戻す。押せない形に変わっていた・状態が shown と違うなら null（F7 と同じ）。
+// キャンセルから戻すとき、読み直したデータの残り席が人数より少なければ "noSeats"（R-07。何も変えない）。
+// 同じ連絡先・同じ日（F-17）は確かめない
+export function undoStatus(current: readonly Reservation[], id: string, shown: Status, at: string): Reservation[] | null | "noSeats" {
+  const target = findShown(current, id, shown);
+  const to = target ? undoTarget(target.history) : null;
+  if (!target || to === null) return null;
+  if (shown === "canceled" && to !== "canceled" && remainingSeats(current, target.lessonDate) < target.people) return "noSeats";
+  return changeStatus(current, id, to, at, "undo");
 }
