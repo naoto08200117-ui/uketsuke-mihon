@@ -110,11 +110,10 @@ export default function ApplyForm({ reservations, onSubmit }: { reservations: re
       <Field htmlFor="apply-request" label="ご要望（任意）" count={{ length: input.request.length, max: REQUEST_MAX }}>
         <textarea id="apply-request" rows={4} maxLength={REQUEST_MAX} placeholder="例：卵のアレルギーがあります" value={input.request} onChange={(e) => set("request", e.target.value)} className={`${controlClass} py-3`} />
       </Field>
-      <div role="status">
-        <p id={ERROR_ID} ref={errorRef} tabIndex={-1} className={`text-body text-danger ${focusRing}`}>
-          {error ? errorText(error) : null}
-        </p>
-      </div>
+      {/* 空のときは absolute で流れから外し、入力欄と「申し込む」の間の gap が二重にかからないようにする */}
+      <p role="status" id={ERROR_ID} ref={errorRef} tabIndex={-1} className={`text-body text-danger empty:absolute ${focusRing}`}>
+        {error ? errorText(error) : null}
+      </p>
       <button type="submit" disabled={submitting} className={`min-h-12 self-start rounded-control bg-accent px-4 text-body text-surface disabled:cursor-not-allowed disabled:border disabled:border-line disabled:bg-surface disabled:text-muted ${focusRing}`}>
         申し込む
       </button>

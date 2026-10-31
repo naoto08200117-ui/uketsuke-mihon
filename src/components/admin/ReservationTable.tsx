@@ -4,7 +4,8 @@ import { formatLessonDate } from "@/lib/dateFormat";
 import StatusBadge from "@/components/StatusBadge";
 import NextStatusButton from "@/components/admin/NextStatusButton";
 
-const cell = "border-b border-line py-3 pr-4 text-left align-top font-normal";
+// 次の操作のボタン（高さ 48px）と、ほかの列の文字の高さをそろえるため、上下の中央に置く
+const cell = "border-b border-line py-3 pr-4 text-left align-middle font-normal";
 
 // キャンセルは muted＋名前に取り消し線（DESIGN.md の追記）
 export function NameText({ reservation }: { reservation: Reservation }) {
