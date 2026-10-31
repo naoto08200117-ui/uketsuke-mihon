@@ -79,3 +79,45 @@ export function formatFileDate(ms: number): string {
   const jst = new Date(ms + JST_OFFSET_MS);
   return `${jst.getUTCFullYear()}${pad2(jst.getUTCMonth() + 1)}${pad2(jst.getUTCDate())}`;
 }
+
+// ── CSV の読み込み（要件定義書8章「日付と日時」。T07）──
+
+const CSV_DATE_PATTERNS = [/^(\d{4})-(\d{2})-(\d{2})$/, /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/];
+// YYYY/M/D H:mm／YYYY-MM-DD HH:mm（どちらも :ss があってよい）／ISO 8601（秒・ミリ秒・時差は無くてもよい）
+const CSV_DATETIME_PATTERNS = [
+  /^(\d{4})\/(\d{1,2})\/(\d{1,2}) (\d{1,2}):(\d{2})(?::(\d{2}))?()()$/,
+  /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?()()$/,
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:\d{2})?$/,
+];
+
+// 希望日 "YYYY-MM-DD"・"YYYY/M/D" → "YYYY-MM-DD"。その月にない日は null
+export function parseCsvLessonDate(value: string): string | null {
+  const m = CSV_DATE_PATTERNS.map((p) => p.exec(value)).find((r) => r !== null);
+  if (!m) return null;
+  const text = `${m[1]}-${pad2(Number(m[2]))}-${pad2(Number(m[3]))}`;
+  return parseDate(text) ? text : null;
+}
+
+// 時差 "Z"・"+09:00" を分にする。書いていなければ日本時間（+09:00）
+function offsetMinutes(zone: string | undefined): number | null {
+  if (!zone) return 9 * 60;
+  if (zone === "Z") return 0;
+  const hours = Number(zone.slice(1, 3));
+  const minutes = Number(zone.slice(4, 6));
+  if (hours > 23 || minutes > 59) return null;
+  return (zone[0] === "-" ? -1 : 1) * (hours * 60 + minutes);
+}
+
+// 申込日時・更新日時 → toISOString() の形。形が違う・ない日時なら null
+export function parseCsvDateTime(value: string): string | null {
+  const m = CSV_DATETIME_PATTERNS.map((p) => p.exec(value)).find((r) => r !== null);
+  if (!m) return null;
+  const [year, month, day, hour, minute] = [1, 2, 3, 4, 5].map((i) => Number(m[i]));
+  const second = m[6] ? Number(m[6]) : 0;
+  const milli = m[7] ? Number(m[7].padEnd(3, "0")) : 0;
+  const offset = offsetMinutes(m[8] || undefined);
+  if (offset === null || hour > 23 || minute > 59 || second > 59) return null;
+  if (!parseDate(`${year}-${pad2(month)}-${pad2(day)}`)) return null;
+  const ms = Date.UTC(year, month - 1, day, hour, minute, second, milli) - offset * 60 * 1000;
+  return new Date(ms).toISOString();
+}

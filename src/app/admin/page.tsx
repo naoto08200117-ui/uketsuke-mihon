@@ -10,6 +10,7 @@ import ReservationTable from "@/components/admin/ReservationTable";
 import ReservationCards from "@/components/admin/ReservationCards";
 import ResetData from "@/components/admin/ResetData";
 import CsvExport from "@/components/csv/CsvExport";
+import CsvImport from "@/components/csv/CsvImport";
 import { STORAGE_NOTICE_TEXT, useReservations } from "@/lib/useReservations";
 
 // 文字の順で比べる（localeCompare は Intl の並べ方に左右されるので使わない）
@@ -22,7 +23,7 @@ function sortForList(reservations: readonly Reservation[]): Reservation[] {
   return [...reservations].sort((a, b) => compareText(a.lessonDate, b.lessonDate) || compareText(a.createdAt, b.createdAt));
 }
 
-// ②管理一覧（F5〜F10・F15）。CSV の読み込み（T07）はまだ置かない
+// ②管理一覧（F5〜F10・F15・F16）
 export default function AdminPage() {
   const snapshot = useReservations();
   const loaded = snapshot.loading ? null : snapshot;
@@ -61,14 +62,16 @@ export default function AdminPage() {
               <ReservationCards reservations={shown} onChanged={setActionMessage} />
             </>
           )}
-          {/* V-01 と「CSV に書き出す」だけ。「CSV を読み込む」と V-03 は T07 で足す */}
           <section aria-labelledby="csv-heading" className="flex flex-col gap-3">
             <h2 id="csv-heading" className="text-body font-bold text-ink">
               CSV（表計算ソフトとのやり取り）
             </h2>
-            <div className="flex flex-wrap gap-3">
+            <p className="text-body text-ink">
+              Excel やスプレッドシートで開けます。読み込みは、今お使いの表と同じ形の架空のデータで試してください（列の名前を「お名前・メール・電話・希望日・人数」に合わせると読み込めます）。
+            </p>
+            <CsvImport currentCount={all.length}>
               <CsvExport reservations={all} />
-            </div>
+            </CsvImport>
           </section>
           <ResetData onReset={setActionMessage} />
         </section>

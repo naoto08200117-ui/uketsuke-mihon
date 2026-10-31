@@ -18,3 +18,5 @@ export const CSV_MAX_BYTES = 1024 * 1024;
 export const CSV_MAX_ROWS = 1000;
 
 export const PEOPLE_OPTIONS: readonly People[] = [1, 2, 3, 4];
+// 読み込めない行を1行ずつ見せる数（21件目からは「ほか{k}行」）
+export const CSV_ERRORS_SHOWN = 20;
